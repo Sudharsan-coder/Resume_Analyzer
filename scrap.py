@@ -2,6 +2,11 @@ import requests
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 
+import asyncio
+from pyppeteer import launch
+from pyppeteer_stealth import stealth
+import time
+
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
 
@@ -30,16 +35,9 @@ def scrape_search_results(query):
             
             similarity_score = similar(query, title)
             if similarity_score >= 0.2:
-                # if similarity_score>max_score:
                 match_result["Title"]=title
                 match_result["link"]=link
                 match_result["snippet"]=snippet
-                # max_score=similarity_score
-                # print("Title:", title)
-                # print("Link:", link)
-                # print("snippet", snippet)
-                # print("Similarity Score:", similarity_score)
-                # print("------")
                 break
     return match_result
 
@@ -51,3 +49,54 @@ company_name = "Codingmart"
 query = f"{employee_name} - {position} at {company_name}"
 
 # print("ans",scrape_search_results(query))
+
+
+async def scrape_udemy_or_coursera_courses(link,selector,course):
+    url = f"{link}{course}"
+
+    browser = await launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
+    page = await browser.newPage()
+    
+    await stealth(page)
+    
+    # Enable stealth mode (emulate human-like behavior)
+    await page.evaluateOnNewDocument('() => { Object.defineProperty(navigator, "webdriver", { get: () => false }); }')
+    
+    await page.goto(url)
+    time.sleep(5)
+    await page.screenshot({'path': 'sc.png', 'fullPage': True, 'quality': 100})
+    # Wait for the page to load (you can adjust the delay as needed)
+    await page.waitForSelector(selector, timeout=5000)
+
+    # Extract course names and prices
+    courses = await page.evaluate(f'''(selector) => {{
+        const courseElements = document.querySelectorAll(selector);
+        const courseData = [];
+        for (const course of courseElements) {{
+            const name = course.querySelector('h3').textContent.trim();
+            const desc = (course.querySelectorAll('p')[1] ?? course.querySelector('p')).textContent.trim();
+            const thumbnail = course.querySelector('img').getAttribute('src');
+            const link ="www.coursera.com"+course.querySelector('a').getAttribute('href');
+            courseData.push({{ name, desc, thumbnail, link }});
+        }}
+        return courseData;
+    }}''', selector)
+    
+    await browser.close()
+    # if(link.find("coursera")):
+    #     course
+    return courses
+
+
+async def course_suggestion(courseName):
+    udemy_cls_name='.course-card-module--large--AL3kI'
+    udemyLink='https://www.udemy.com/courses/search/?src=ukw&q='
+    coursera_cls_name = '.cds-ProductCard-gridCard'
+    courseraLink = 'https://www.coursera.org/search?query='
+    courses_data = await scrape_udemy_or_coursera_courses(courseraLink, coursera_cls_name, courseName)
+    return courses_data
+
+
+# main("java")
+# asyncio.run(main("java"))
+# print(arr[0])
