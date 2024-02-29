@@ -17,3 +17,5 @@ To start the server, run the server.py file
 ```
 python3 server.py
 ```
+
+For more details about the API, reach out to the /docs end point to access the Swagger document

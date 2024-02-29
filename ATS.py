@@ -196,7 +196,7 @@ def calculateScore(resume):
                                     By highlighting your soft skills, you can demonstrate your ability to work 
                                     effectively in a team, communicate clearly, solve problems, and adapt to changing situations."""
         missedFields.add("Softs kills")
-    print(ats_score)
+    # print(ats_score)
     return {"total":total,"missedFields":missedFields,"ats_score":ats_score}
 
 

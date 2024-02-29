@@ -12,7 +12,7 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 
 def gemini_json_response(count,prompt,text):
-    print("Attempt ",count)
+    print("Gemini's {} attempt ".format(count+1))
     llm = ChatGoogleGenerativeAI(model="gemini-pro", google_api_key=config["GEMINI_API_KEY"])
     prompt+="{text}"
 
@@ -23,31 +23,29 @@ def gemini_json_response(count,prompt,text):
     tweet_prompt = PromptTemplate.from_template(prompt)
     tweet_chain = LLMChain(llm=llm, prompt=tweet_prompt, verbose=False)
     try:
+        # d=
         response = tweet_chain.run(text=text)
         # print(response)
         obj=json.loads(response)
         # print(obj)
     except Exception as e:
         print(e)
-        if count<5:
-            return gemini_json_response(count+1,prompt,text)
+        if count<4:
+            obj=gemini_json_response(count+1,prompt,text)
+            return obj
         else:
             return None
     return obj
 
 
-def get_informations(resumeDetails):
-    prompt='Your task is to parse the resume details and give a json format which can be readily converted into dict using json.loads in python and if there is no relevent information found then use a empty string(""),. The output must be in the below format {{"Contact_information":{{"Name":"", "email":"", "phone":"", "Linkedin":"", "gitHub":""}},"Resume_summary":"mandatory field","Working_experience" :[{{"Organization_name":"","role":"", "years_of_experience":"date or number"}}] (if available),"Projects":[{{"Name":"","description":"","tech_stack":""}}],"Certifications":[""] (if available),"Education" : [{{"Institution_name":"","Degree":"", "Marks":"" ,"Completion_year":""}}],"Achievements":[""](if avaliable),Hard_skills":[""],"Soft_skills":[""] }}. And don\'t use backticks or other special symbols in the output.'
-    text=f"The resume detail is :{resumeDetails}"
-    # print(prompt)
-    return gemini_json_response(0,prompt,text)
-
 def extract_text(path):
-    pdfFileObj = open(path, 'rb')  #reading the file
+    try:
+        pdfFileObj = open(path, 'rb')  #reading the file
+    except Exception as e:
+        return "File not found"
     result=""
     is_image=False
     pdfReader = PyPDF2.PdfReader(pdfFileObj) 
-
     for pg in range(0,len(pdfReader.pages)):
         result+=pdfReader.pages[pg].extract_text()  #extracting text directly
 
