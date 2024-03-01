@@ -10,6 +10,9 @@ import PyPDF2
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
+import warnings
+from langchain_core._api.deprecation import LangChainDeprecationWarning
+warnings.filterwarnings("ignore", category=LangChainDeprecationWarning)
 
 def gemini_json_response(count,prompt,text):
     print("Gemini's {} attempt ".format(count+1))
@@ -26,7 +29,11 @@ def gemini_json_response(count,prompt,text):
         # d=
         response = tweet_chain.run(text=text)
         # print(response)
-        obj=json.loads(response)
+        if(response[0]=="`"):
+            obj=json.loads(response[7:-3])
+        else:
+            obj=json.loads(response)  
+
         # print(obj)
     except Exception as e:
         print(e)
@@ -61,3 +68,17 @@ def extract_text(path):
     pdfFileObj.close()
 
     return {"text":result,"is_image":is_image}
+
+def skill_compare(skills1,skills2):
+    matching_skills=[]
+    not_match_skills=[]
+    for index,skill in enumerate(skills1):
+        skills1[index]=skill.replace(" ","").replace("-","").replace(".","").lower()
+    skills2=list(map(str.lower,skills2))
+    for skill in skills2:
+        skill=skill.replace(" ","").replace("-","").replace(".","").lower()
+        if skill in skills1:
+            matching_skills.append(skill)
+        else:
+            not_match_skills.append(skill)
+    return {"match":matching_skills,"not_match":not_match_skills}

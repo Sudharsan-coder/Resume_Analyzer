@@ -218,4 +218,4 @@ def getReport(resume):
         # fieldsToAdd = json.loads(fieldsToAdd)
         # fieldsToAdd = json.dumps(fieldsToAdd)
         # print(fieldsToAdd)
-    return {"ats_score" : str(round(ats_score, 1)) + "%", "resumeReport" : resumeReport["total"], "fieldsToAdd" : fieldsToAdd}
+    return {"ats_score" : round(ats_score, 1), "resumeReport" : resumeReport["total"], "fieldsToAdd" : fieldsToAdd}

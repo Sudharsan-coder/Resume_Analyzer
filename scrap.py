@@ -64,7 +64,7 @@ async def scrape_udemy_or_coursera_courses(link,selector,course):
     
     await page.goto(url)
     time.sleep(5)
-    await page.screenshot({'path': 'sc.png', 'fullPage': True, 'quality': 100})
+    # await page.screenshot({'path': 'sc.png', 'fullPage': True, 'quality': 100})
     # Wait for the page to load (you can adjust the delay as needed)
     await page.waitForSelector(selector, timeout=5000)
 
@@ -95,6 +95,7 @@ async def course_suggestion(courseName):
     courseraLink = 'https://www.coursera.org/search?query='
     courses_data = await scrape_udemy_or_coursera_courses(courseraLink, coursera_cls_name, courseName)
     return courses_data
+
 
 
 # main("java")
