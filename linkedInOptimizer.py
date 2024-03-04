@@ -144,9 +144,9 @@ def headline_match(headline, jobPosition):
         headlineScore += 2
         objective = f"We recommend including the exact title '{jobPosition}' in your headline. Recruiters frequently search by job titles and exact phrasing ranks higher in search results."                                                                                  
     
-    return {"remarks" : {"length" : lengthSuggestion ,
-                        "headline": objective, "specialCharacters" : specialCharactersSuggestion,
-                        "sampleHeadline" : jobPosition},
+    return {"remarks" : {"Length" : lengthSuggestion ,
+                        "Headline": objective, "Special Characters" : specialCharactersSuggestion,
+                        "Sample Headline" : jobPosition},
             "score" : headlineScore
             }
 
@@ -181,9 +181,9 @@ def education_match(resumeDegrees, descriptionDegrees):
 
     return {
         "remarks": {
-            "comparison":{"matchingDegrees": matching_degrees,
+            "Comparison":{"matchingDegrees": matching_degrees,
                           "requiredDegrees": descriptionDegrees},
-            "suggestion": education_matching
+            "Suggestion": education_matching
         },
         "score": educationScore
     }
@@ -207,6 +207,21 @@ def extract_years_from_experience(text):
     total_months = sum(int(month) for month in matches2)
     return float(total_years) + float(total_months/12)
 
+# Overall Resume Matching Review
+def generate_review(match_percentage):
+    if match_percentage >= 0 and match_percentage <= 20:
+        return "Your resume currently shows a minimal alignment with the job requirements. Consider revising and highlighting your skills and experiences that closely match the job description."
+    elif match_percentage > 20 and match_percentage <= 40:
+        return "Your resume demonstrates some alignment with the job requirements, but there's room for improvement. Focus on emphasizing your relevant experiences and skills to enhance your suitability for the position."
+    elif match_percentage > 40 and match_percentage <= 60:
+        return "Your resume shows a moderate alignment with the job requirements, indicating a good foundation. Keep refining and tailoring your resume to better match the specific needs of the job role."
+    elif match_percentage > 60 and match_percentage <= 80:
+        return "Your resume exhibits a strong alignment with the job requirements, showcasing your suitability for the position. Continue fine-tuning and emphasizing your key qualifications to further strengthen your application."
+    elif match_percentage > 80 and match_percentage <= 100:
+        return "Congratulations! Your resume is highly aligned with the job requirements, indicating a great fit for the position. Ensure your application highlights your relevant experiences and skills effectively to stand out to potential employers."
+
+
+
 # Combined function
 def complete_analysis(resume, jobDescription):
 
@@ -215,10 +230,9 @@ def complete_analysis(resume, jobDescription):
     # Get resume and Job description information
     resumeInfo = get_resume_information(resume)
     descriptionInfo = get_description_information(jobDescription)
-    # print(resumeInfo)
-    # print(descriptionInfo)
 
-    # Perform skill comparison
+
+    # Skills matching
     mustHave = skill_compare(resumeInfo["topSkills"], descriptionInfo["mustHaveSkills"])
     niceToHave = skill_compare(resumeInfo["topSkills"], descriptionInfo["niceToHaveSkills"])
     totalSkillsMatching = len(mustHave["matchingSkills"])
@@ -227,12 +241,14 @@ def complete_analysis(resume, jobDescription):
     if totalSkillsMatching == 0:
         skillScore = 0
     elif notMatchingSkills != 0:
-        skillScore += len(mustHave["matchingSkills"])/len(mustHave["notMatchingSkills"]) * 50
+        skillScore += len(mustHave["matchingSkills"])/len(mustHave["notMatchingSkills"]) * 25
+        score += skillScore
     skill_comparison = {
         "mustHave": mustHave,
         "niceToHave": niceToHave
     }
     skillsReview = generate_upskilling_paragraph(mustHave["notMatchingSkills"])
+    skills = {"remarks" : {"Comparison" : skill_comparison, "Suggestion" : skillsReview}, "score" : round(skillScore*4, 1)}
 
     # Experience matching
     required_experience = descriptionInfo["yearsOfExperienceRequired"]
@@ -244,15 +260,19 @@ def complete_analysis(resume, jobDescription):
     else :
         experienceScore = 20
         experience_matching = "The profile fulfills the criteria with their experience."
+        
     score += experienceScore
+    experience = {"remarks" : {"Experience Match" : experience_matching}, "score" : round(experienceScore*5, 1)}
 
-    # Perform headline matching
+    # Headline matching
     headline_matching = headline_match(resumeInfo["resumeHeadline"], descriptionInfo["jobPosition"])
     score += headline_matching["score"]
-    
-    # Perform education matching
+    headline_matching["score"] = round((headline_matching["score"]/25)*100, 1)
+
+    # Education matching
     education_matching = education_match(resumeInfo["education"], descriptionInfo["streamOfEducation"])
     score += education_matching["score"]
+    education_matching["score"] = round(education_matching["score"]*10, 1)
 
     # Check Name and location
     name = resumeInfo["basicInfo"]["name"]
@@ -269,13 +289,25 @@ def complete_analysis(resume, jobDescription):
     else :
         locationReview = "Please update your Location in the profile. Adding a specific location and country helps recruiters find you - more than 30% of recruiters will search by location."
     score += basicInfoScore
+    basic_info = {"remarks" : {"Name" : nameReview , "Location" : locationReview}, "score" : round(basicInfoScore*10, 1)}
+
+    # Score remarks and common tips
+    score_remarks = generate_review(score)
+    tips = {
+        "Basic Info": "Your name and location are essential parts of your LinkedIn profile. Make sure they are accurate and up-to-date.",
+        "Headline": "Your headline is one of the first things people see on your LinkedIn profile. Make sure it accurately reflects your professional identity and highlights your skills and expertise.",
+        "Experience": "Highlight your relevant experience on your LinkedIn profile. Use bullet points to showcase your achievements and quantify your impact whenever possible.",
+        "Skills": "Ensure your LinkedIn profile includes all relevant skills for your desired job roles. You can list up to 50 skills, so make sure to include a diverse range that showcases your expertise.",
+        "Education": "Include your education details on your LinkedIn profile, including degrees, certifications, and any relevant courses. This helps establish your credibility and expertise in your field."
+    }
 
     return {
         "Score" : score,
-        "Basic Info": {"remarks" : {"name" : nameReview , "location" : locationReview}, "score" : basicInfoScore},
+        "Score Remarks" : score_remarks,
+        "Basic Info": basic_info,
         "Headline": headline_matching,
-        "Experience" : {"remarks" : {"experienceMatch" : experience_matching}, "score" : experienceScore},
-        "Skills": {"remarks" : {"comparison" : skill_comparison, "suggestion" : skillsReview}, "score" : skillScore},
+        "Experience" : experience,
+        "Skills": skills,
         "Education": education_matching,
-        "Tips and Tricks" : {}
+        "Tips and Tricks" : tips
     }
