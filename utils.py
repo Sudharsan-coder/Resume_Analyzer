@@ -1,4 +1,3 @@
-import time
 from dotenv import dotenv_values
 
 config = dotenv_values(".env")
@@ -28,15 +27,12 @@ def gemini_json_response(count,prompt,text):
     tweet_prompt = PromptTemplate.from_template(prompt)
     tweet_chain = LLMChain(llm=llm, prompt=tweet_prompt, verbose=False)
     try:
-        # d=
         response = tweet_chain.run(text=text)
-        # print(response)
         if(response[0]=="`"):
             obj=json.loads(response[7:-3])
         else:
             obj=json.loads(response)  
 
-        # print(obj)
     except Exception as e:
         print(e)
         if count<4:

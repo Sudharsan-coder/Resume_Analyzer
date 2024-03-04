@@ -83,8 +83,6 @@ async def scrape_udemy_or_coursera_courses(link,selector,course):
     }}''', selector)
     
     await browser.close()
-    # if(link.find("coursera")):
-    #     course
     return courses
 
 

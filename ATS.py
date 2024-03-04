@@ -196,7 +196,6 @@ def calculateScore(resume):
                                     By highlighting your soft skills, you can demonstrate your ability to work 
                                     effectively in a team, communicate clearly, solve problems, and adapt to changing situations."""
         missedFields.add("Softs kills")
-    # print(ats_score)
     return {"total":total,"missedFields":missedFields,"ats_score":ats_score}
 
 
@@ -215,7 +214,5 @@ def getReport(resume):
                                       It should not contain any special characters,underscore or numbers.Use camel case for fieldnames in json.
                                       Just include headings as field. he output should be in this format : 
                                       {{"fieldName" : "Importance of this field and recommend to add this section in one paragraph (four lines)"}}''',missedFields_str)
-        # fieldsToAdd = json.loads(fieldsToAdd)
-        # fieldsToAdd = json.dumps(fieldsToAdd)
-        # print(fieldsToAdd)
+
     return {"ats_score" : round(ats_score, 1), "resumeReport" : resumeReport["total"], "fieldsToAdd" : fieldsToAdd}

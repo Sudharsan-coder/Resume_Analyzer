@@ -16,7 +16,6 @@ def Resume_parsing(resumeDetails):
     "Languages":"" }}
     '''
     text=f"The resume detail is :{resumeDetails}"
-    # print(prompt)
     return gemini_json_response(0,prompt,text)
 
 
@@ -28,6 +27,7 @@ def find_number(string):
 
 def compare_without_special_chars(string1,string2):
     return string1.replace(" ","").replace("-","").replace(".","").lower() == string2.replace(" ","").replace("-","").replace(".","").lower() 
+
 def has_number(string):
      return any(char.isdigit() for char in string)
 
@@ -39,22 +39,6 @@ def find_words_in_string(string,words):
     return ""
 
 def description_parsing(description):
-    # parsed_info=gemini_json_response(0,'''You are a Job description parser. Task: Extract the information from the given description in a json format, which is readily converted into dict in python using the json.loads method.
-    #                             Conditions: 1.The output must not contain any backticks or special characters
-    #                             2. if there is no relevent information found then use a empty string(""),
-    #                             3. if there is any number words then convert it into digit
-    #                             4. Don't use new words other than the word in the given description
-    #                             5. The Must_have_skills and the Nice_to_have_skills should always be less than 3 words
-    #                             6. the output format must be like
-    #                             {{"Job_title":"",
-    #                             "Must_have_skills":[""](always must be a less than 3 words),
-    #                             "Experience":"",
-    #                             "Roles_and_responsibilities":"",
-    #                             "Salary":"",
-    #                             "Location":"",
-    #                             "Nice_to_have_skills":"",
-    #                             "Contact":""}}''',
-    #                             f"The job description is :{description}")
     parsed_info=gemini_json_response(0,"""Your task is to parse the Job description and give a json format which can be readily converted into dict using json.loads in python and if there is no relevent information found then use a empty string("").And don\'t use backticks or other special symbols in the output. If there is any number words then convert it into digit. The output must be in the below format 
       {{"Job_title":"",
         "Must_have_skills":["always must be a less than 3 words"],
@@ -69,7 +53,6 @@ def description_parsing(description):
     parsed_info["Timing"]=find_words_in_string(description,["full time","full-time","fulltime","part time","parttime","part-time"])
     parsed_info["Job_type"]=find_words_in_string(description,["onsite","on site","on-site","remote","hybrid","work from home"])
 
-    # print(parsed_info)
     return parsed_info
 
 def calculate_description_score(description):
@@ -134,16 +117,20 @@ def calculate_description_score(description):
         score+=5
     else:
         missing.append("Including the contact details is a good practice")
-    if(len(parsed_info["Qualification"])>0):
-        score+=5
+    if(len(parsed_info["Degree"])>0):
+        score+=2.5
     else:
-        missing.append("Including the Qualification details is a good practice")
+        missing.append("Including the Minimum required Degree details is a good practice")
+    if(len(parsed_info["Course"])>0):
+        score+=2.5
+    else:
+        missing.append("Including the Sepcific required course details is a good practice")
 
-    return {"score":score,"Suggestions_to_improve":missing}
+    return {"Score":score,"Suggestions_to_improve":missing}
 
 def parsing_resume_job_description(resume,description):
-    print(resume)
-    print(description)
+    # print(resume)
+    # print(description)
     score_info={}
     total=0
     resume_skills=resume["Hard_skills"]
@@ -174,8 +161,6 @@ def parsing_resume_job_description(resume,description):
     total+=score
     print(description["Degree"])
     for education in resume["Education"]:
-        # print(education)
-        # if(education["Degree"]==description["Degree"]):
         if(compare_without_special_chars(education["Degree"],description["Degree"])):
             number_of_matching_degree+=1
         if(compare_without_special_chars(education["Course"],description["Course"])):
