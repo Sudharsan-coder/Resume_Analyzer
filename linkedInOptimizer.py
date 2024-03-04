@@ -271,11 +271,11 @@ def complete_analysis(resume, jobDescription):
     score += basicInfoScore
 
     return {
-        "score" : score,
-        "basicInfo": {"remarks" : {"name" : nameReview , "location" : locationReview}, "score" : basicInfoScore},
-        "headline": headline_matching,
-        "experience" : {"remarks" : {"experienceMatch" : experience_matching}, "score" : experienceScore},
-        "skills": {"remarks" : {"comparison" : skill_comparison, "suggestion" : skillsReview}, "score" : skillScore},
-        "education": education_matching,
-        "tipsAndTricks" : {}
+        "Score" : score,
+        "Basic Info": {"remarks" : {"name" : nameReview , "location" : locationReview}, "score" : basicInfoScore},
+        "Headline": headline_matching,
+        "Experience" : {"remarks" : {"experienceMatch" : experience_matching}, "score" : experienceScore},
+        "Skills": {"remarks" : {"comparison" : skill_comparison, "suggestion" : skillsReview}, "score" : skillScore},
+        "Education": education_matching,
+        "Tips and Tricks" : {}
     }
