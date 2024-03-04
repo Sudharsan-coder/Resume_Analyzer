@@ -1,10 +1,12 @@
+from typing import List
 import time
 from multiprocessing import Process,Manager
 from fastapi import FastAPI, File,Form, UploadFile, HTTPException
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from utils import extract_text
+from linkedInOptimizer import complete_analysis,extract_text
+# from utils import extract_text
 from scrap import scrape_search_results,course_suggestion
 from ATS import getReport
 from Parsing import calculate_description_score,Resume_parsing,description_parsing,parsing_resume_job_description,comparison_parsing
@@ -249,6 +251,68 @@ async def topResumes(file: UploadFile = File(...), description: str = Form(...))
 #     return_dict[file_path] = parsing_resume_job_description(resume_obj, description)
 
 
+
+class BasicInfo(BaseModel):
+    name: str
+    location: str
+    basicInfoScore: int
+
+
+class Headline(BaseModel):
+    length: str
+    headline: str
+    specialCharacters: str
+    headlineScore: int
+    sampleHeadline: str
+
+
+class Experience(BaseModel):
+    experienceReview: str
+    experienceScore: float
+
+
+class MustHave(BaseModel):
+    matchingSkills: List
+    notMatchingSkills: List
+
+
+class NiceToHave(BaseModel):
+    matchingSkills: List
+    notMatchingSkills: List
+
+
+class SkillsMatching(BaseModel):
+    mustHave: MustHave
+    niceToHave: NiceToHave
+
+
+class Skills(BaseModel):
+    skillsMatching: SkillsMatching
+    skillsReview: str
+    skillScore: int
+
+
+class Education(BaseModel):
+    matchingDegrees: List
+    educationScore: int
+
+
+class analyzeResume(BaseModel):
+    score: float
+    basicInfo: BasicInfo
+    headline: Headline
+    experience: Experience
+    skills: Skills
+    education: Education
+
+
+# API to get resume and description from the client
+@app.post("/analyze-resume/", response_model = analyzeResume)
+async def analyze_resume(resume: UploadFile = File(...), job_description: str = Form(...)):
+    resume_contents = await resume.read()
+    resume_text = extract_text(resume_contents)["text"]
+    result = complete_analysis(resume_text, job_description)
+    return result
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8005)
