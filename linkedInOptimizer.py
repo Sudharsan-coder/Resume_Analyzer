@@ -61,10 +61,10 @@ def get_description_information(jobDescription):
             {{"jobPosition":"mandatory field",
             "mustHaveSkills":[""](tools, frameworks, libraries only),
             "Summary" : "", 
-            "yearsOfExperienceRequired" : "" (number only),
+            "yearsOfExperienceRequired" : "" (number only or 0 if not specified),
             "niceToHaveSkills":[""] (tools, frameworks, libraries only),
             "jobLocation"
-            "streamOfEducation" : "" (if available),
+            "streamOfEducation" : [""] (if available),
             }}. And don\'t use backticks or other special symbols in the output.'''
     text=f"The Description detail is :{jobDescription}"
     return gemini_json_response(0,prompt,text)
@@ -91,7 +91,6 @@ def extract_text(file):
 # Compare skills in description and user profile
 def skill_compare(skills1, skills2):
     matching_skills = []
-    not_match_skills = []
     for index, skill in enumerate(skills1):
         skills1[index] = skill.replace(" ", "").replace("-", "").replace(".", "").lower()
     skills2 = list(map(str.lower, skills2))
@@ -99,9 +98,7 @@ def skill_compare(skills1, skills2):
         skill_formated = skill.replace(" ", "").replace("-", "").replace(".", "").lower()
         if skill_formated in skills1:
             matching_skills.append(skill)
-        else:
-            not_match_skills.append(skill)
-    return {"matchingSkills": matching_skills, "notMatchingSkills": not_match_skills}
+    return {"matchingSkills": matching_skills, "notMatchingSkills": skills2}
 
 # Skills Review
 def generate_upskilling_paragraph(skills):
@@ -141,30 +138,55 @@ def headline_match(headline, jobPosition):
 
     # Headline Match Checking
     if headline_formatted in jobPosition_formatted or jobPosition_formatted in headline_formatted:
-        headlineScore += 10
+        headlineScore += 15
         objective = f"Fantastic job including '{jobPosition}' in your headline! This simple step can greatly improve your visibility to recruiters, making it easier for them to find you. Keep up the excellent work!"
     else:
         headlineScore += 2
         objective = f"We recommend including the exact title '{jobPosition}' in your headline. Recruiters frequently search by job titles and exact phrasing ranks higher in search results."                                                                                  
     
-    return {"length" : lengthSuggestion ,
-            "headline": objective,
-            "specialCharacters" : specialCharactersSuggestion,
-            "headlineScore" : headlineScore,
-            "sampleHeadline" : jobPosition}
+    return {"remarks" : {"length" : lengthSuggestion ,
+                        "headline": objective, "specialCharacters" : specialCharactersSuggestion,
+                        "sampleHeadline" : jobPosition},
+            "score" : headlineScore
+            }
 
 # Education
-def education_match(resumeDegree, descriptionDegree):
+def education_match(resumeDegrees, descriptionDegrees):
     matching_degrees = []
     educationScore = 0
-    description_degree_formatted = descriptionDegree.replace(" ", "").replace("-", "").replace(".", "").lower()
-    for degree_info in resumeDegree:
+    description_degrees_formatted = [degree.replace(" ", "").replace("-", "").replace(".", "").lower() for degree in descriptionDegrees]
+    
+    for degree_info in resumeDegrees:
         resume_degree_formatted = degree_info['Degree'].replace(" ", "").replace("-", "").replace(".", "").replace(",", "").lower()
-        if description_degree_formatted in resume_degree_formatted or resume_degree_formatted in description_degree_formatted:
-            if description_degree_formatted != "" and resume_degree_formatted != "" :
-               matching_degrees.append(descriptionDegree)
-               educationScore = 10
-    return {"matchingDegrees" : matching_degrees, "educationScore" : educationScore}
+        
+        for description_degree_formatted in description_degrees_formatted:
+            if description_degree_formatted in resume_degree_formatted or resume_degree_formatted in description_degree_formatted:
+                if description_degree_formatted and resume_degree_formatted:
+                    matching_degrees.append(degree_info)
+                    break  # Break the inner loop if a match is found
+
+    if len(matching_degrees):
+        education_matching = "Congratulations! Your education matches the job requirements."
+        educationScore += 10
+    elif len(descriptionDegrees) == 0:
+        if(len(resumeDegrees)):
+            educationScore += 8
+            education_matching = "Candidates from any stream of education can apply to this job. You have added education qualifications in your profile which is an added advantage"
+        else :
+            education_matching = "Candidates from any stream of education can apply to this job. But we recommend having at least one education degree that matches the job requirements."
+
+    else :
+        educationScore += 2
+        education_matching = "We recommend having at least one education degree that matches the job requirements."
+
+    return {
+        "remarks": {
+            "comparison":{"matchingDegrees": matching_degrees,
+                          "requiredDegrees": descriptionDegrees},
+            "suggestion": education_matching
+        },
+        "score": educationScore
+    }
 
 # Find Profile Experience
 def extract_years_from_experience(text):
@@ -183,7 +205,7 @@ def extract_years_from_experience(text):
     # Convert the matched years to integers and sum them up
     total_years = sum(int(year) for year in matches1)
     total_months = sum(int(month) for month in matches2)
-    return round(float(total_years) + float(total_months/12), 1)
+    return float(total_years) + float(total_months/12)
 
 # Combined function
 def complete_analysis(resume, jobDescription):
@@ -199,7 +221,13 @@ def complete_analysis(resume, jobDescription):
     # Perform skill comparison
     mustHave = skill_compare(resumeInfo["topSkills"], descriptionInfo["mustHaveSkills"])
     niceToHave = skill_compare(resumeInfo["topSkills"], descriptionInfo["niceToHaveSkills"])
-    skillScore = len(mustHave["matchingSkills"])/len(mustHave["notMatchingSkills"]) * 50
+    totalSkillsMatching = len(mustHave["matchingSkills"])
+    notMatchingSkills = len(mustHave["notMatchingSkills"])
+    skillScore = 0
+    if totalSkillsMatching == 0:
+        skillScore = 0
+    elif notMatchingSkills != 0:
+        skillScore += len(mustHave["matchingSkills"])/len(mustHave["notMatchingSkills"]) * 50
     skill_comparison = {
         "mustHave": mustHave,
         "niceToHave": niceToHave
@@ -209,6 +237,7 @@ def complete_analysis(resume, jobDescription):
     # Experience matching
     required_experience = descriptionInfo["yearsOfExperienceRequired"]
     profile_experience = extract_years_from_experience(resume)
+    
     if float(profile_experience) < float(required_experience) :
         experienceScore = float(profile_experience)/float(required_experience)*10
         experience_matching = f"The job requires a minimum of {required_experience} years of hands-on experience, demonstrating proficiency in relevant skills and tasks. But you have only {profile_experience} years of experience."
@@ -219,11 +248,11 @@ def complete_analysis(resume, jobDescription):
 
     # Perform headline matching
     headline_matching = headline_match(resumeInfo["resumeHeadline"], descriptionInfo["jobPosition"])
-    score += headline_matching["headlineScore"]
+    score += headline_matching["score"]
     
     # Perform education matching
     education_matching = education_match(resumeInfo["education"], descriptionInfo["streamOfEducation"])
-    score += education_matching["educationScore"]
+    score += education_matching["score"]
 
     # Check Name and location
     name = resumeInfo["basicInfo"]["name"]
@@ -243,9 +272,10 @@ def complete_analysis(resume, jobDescription):
 
     return {
         "score" : score,
-        "basicInfo": {"name" : nameReview , "location" : locationReview, "basicInfoScore" : basicInfoScore},
+        "basicInfo": {"remarks" : {"name" : nameReview , "location" : locationReview}, "score" : basicInfoScore},
         "headline": headline_matching,
-        "experience" : {"experienceReview" : experience_matching, "experienceScore" : experienceScore},
-        "skills": {"skillsMatching" : skill_comparison, "skillsReview" : skillsReview, "skillScore" : skillScore},
-        "education": education_matching
+        "experience" : {"remarks" : {"experienceMatch" : experience_matching}, "score" : experienceScore},
+        "skills": {"remarks" : {"comparison" : skill_comparison, "suggestion" : skillsReview}, "score" : skillScore},
+        "education": education_matching,
+        "tipsAndTricks" : {}
     }

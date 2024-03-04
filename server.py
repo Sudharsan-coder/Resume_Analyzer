@@ -77,7 +77,7 @@ class CandidateResumeScore(BaseModel):
     fieldsToAdd: FieldsToAdd
 
 
-@app.post("/api/v1/candidate/resume-score",response_model=CandidateResumeScore)
+@app.post("/api/v1/candidate/resume-score")
 async def resume_details_with_skill_related_links(file: UploadFile = File(...)):
     contents = await file.read()
     # previous=time.time()
@@ -251,63 +251,8 @@ async def topResumes(file: UploadFile = File(...), description: str = Form(...))
 #     return_dict[file_path] = parsing_resume_job_description(resume_obj, description)
 
 
-
-class BasicInfo(BaseModel):
-    name: str
-    location: str
-    basicInfoScore: int
-
-
-class Headline(BaseModel):
-    length: str
-    headline: str
-    specialCharacters: str
-    headlineScore: int
-    sampleHeadline: str
-
-
-class Experience(BaseModel):
-    experienceReview: str
-    experienceScore: float
-
-
-class MustHave(BaseModel):
-    matchingSkills: List
-    notMatchingSkills: List
-
-
-class NiceToHave(BaseModel):
-    matchingSkills: List
-    notMatchingSkills: List
-
-
-class SkillsMatching(BaseModel):
-    mustHave: MustHave
-    niceToHave: NiceToHave
-
-
-class Skills(BaseModel):
-    skillsMatching: SkillsMatching
-    skillsReview: str
-    skillScore: int
-
-
-class Education(BaseModel):
-    matchingDegrees: List
-    educationScore: int
-
-
-class analyzeResume(BaseModel):
-    score: float
-    basicInfo: BasicInfo
-    headline: Headline
-    experience: Experience
-    skills: Skills
-    education: Education
-
-
 # API to get resume and description from the client
-@app.post("/analyze-resume/", response_model = analyzeResume)
+@app.post("/analyze-resume/")
 async def analyze_resume(resume: UploadFile = File(...), job_description: str = Form(...)):
     resume_contents = await resume.read()
     resume_text = extract_text(resume_contents)["text"]

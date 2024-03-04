@@ -2,7 +2,7 @@ from utils import gemini_json_response
 
 
 def calculateScore(resume):
-    total = {}
+    total = []
     missedFields=set()
     ats_score =0.0
     # Initial Scores
@@ -45,17 +45,19 @@ def calculateScore(resume):
 
     contactInfo = resume.get("Contact_information")
     for key, value in contactInfo.items():
-        if key in ["Name", "email", "phone", "linkedin", "github"] and value is not None and value != "":
+        if key in ["Name", "email", "phone", "linkedin"] and value is not None and value != "":
             contactScore += 10 / 5
         else : 
             missedFields.add(key + " in Contact section")
-            contactReview = """Make Sure You Provide Name, email and mailID in your contact section. Including comprehensive 
+            contactReview = """Make Sure You Provide Name, email, phone, linkedIn in your contact section. Including comprehensive 
                             contact information ensures seamless communication between you and potential employers, 
                             facilitating swift follow-ups and interview scheduling, ultimately expediting the hiring process 
                             and enhancing your chances of securing opportunities."""
-            
-    total["contactScore"] = contactScore
-    total["contactReview"] = contactReview
+    contact = {}     
+    contact["name"] = "Contact"  
+    contact["score"] = round(contactScore*10,1)
+    contact["description"] = contactReview
+    total.append(contact)
     ats_score += contactScore
 
     # Resume Objective Section
@@ -68,13 +70,14 @@ def calculateScore(resume):
         resumeObjectiveReview = """Make sure you include the resume objective/summary in your resume. Enhance your resume 
                                 objective by aligning it with the specific job role and company culture, showcasing your enthusiasm 
                                 and commitment towards contributing to the organization's success."""
-        
-    total["resumeObjectiveScore"] = resumeObjectiveScore
-    total["resumeObjectiveReview"] = resumeObjectiveReview
+    objective = {}
+    objective["name"] = "Objective"
+    objective["score"] = round(resumeObjectiveScore*10,1)
+    objective["description"] = resumeObjectiveReview
+    total.append(objective)
     ats_score += resumeObjectiveScore
 
     # Work Experience/Internships
-    
     workExperience = resume.get("Working_experience")
     total_jobs = len(workExperience)
     score_per_job = 15 / total_jobs if total_jobs > 0 else 0
@@ -91,16 +94,20 @@ def calculateScore(resume):
                                         and demonstrating your potential value to prospective employers."""
         workExperienceScore  += job_score
         ats_score += job_score
-    total["workExperienceScore"] = workExperienceScore
-    total["workExperienceReview"] = workExperienceReview
+    experience = {}
+    experience["name"] = "Experience"
+    experience["score"] = round((workExperienceScore/15)*100, 1)
+    experience["description"] = workExperienceReview
+    total.append(experience)
 
     # Education
-    
+    Education = {}
+    Education["name"] = "Education"
     education = resume.get("Education")
     total_educations = len(education)
     if total_educations > 3 or total_educations == 0:
-        total["educationScore"] = 0
-        total["educationReview"] = "Please try to include any two recent educational qualifications"
+        Education["score"] = 0
+        Education["description"] = "Please try to include any two recent educational qualifications"
     else:
         score_per_education = 5 / total_educations if total_educations > 0 else 0
         for degree in education:
@@ -110,12 +117,14 @@ def calculateScore(resume):
                 else :
                     missedFields.add(key + " in Education section")
                     educationReview = "Make sure you update the Education name, degree, marks and years of graduation"
-        total["educationScore"] = educationScore
-        total["educationReview"] = educationReview
+        Education["score"] = round(educationScore*20, 1)
+        Education["description"] = educationReview
         ats_score += educationScore
-        
+    total.append(Education)   
+
     # Projects
-    
+    Project = {}
+    Project["name"] = "Project"
     project = resume.get("Projects")
     total_projects = len(project)
     score_per_project = 15/total_projects if total_projects > 0 else 0
@@ -129,12 +138,15 @@ def calculateScore(resume):
                                 Provide context around project challenges, methodologies employed, and outcomes achieved, 
                                 showcasing your problem-solving skills, creativity, and ability to drive successful project outcomes."""
     
-    total["projectScore"] = projectScore
-    total["projectReview"] = projectReview
+    Project["score"] = round((projectScore/15)*100, 1)
+    Project["description"] = projectReview
     ats_score += projectScore
+    total.append(Project)
 
     # Skills
-    
+    Skills = {}
+    skillsScore = 0
+    Skills["name"] = "Skills"
     skills = resume.get("Hard_skills")
     if len(skills) > 5 : skillsScore = 20
     elif (len(skills) > 3) : skillsScore = 15
@@ -144,59 +156,77 @@ def calculateScore(resume):
                             relevant to the job description and industry trends, emphasizing proficiency levels and any specialized 
                             expertise or certifications you possess to distinguish yourself as a top candidate."""
     
-    total["skillsScore"] = skillsScore
-    total["skillsReview"] = skillsReview
+    Skills["score"] = round(skillsScore*5, 1)
+    Skills["description"] = skillsReview
+    total.append(Skills)
     ats_score += skillsScore
 
     # Optional Sections - Certifications/Achievements/PDF resume/Soft Skills 
-    
     # Image or PDF
+    Format = {}
+    Format["name"] = "Format"
     isImage = resume.get("is_image")
     if isImage == True:
-        total["formatReview"] = """You have uploaded an image resume which would fail in 
+        Format["score"] = 0
+        Format["description"] = """You have uploaded an image resume which would fail in 
                                 many ATS recruitment process. Please have a resume in PDF format"""
     else : 
-        total["formatScore"] = 5
-        total["formatReview"] = """Great that you have uploaded a PDF format of your resume, 
+        Format["score"] = 100
+        Format["description"] = """Great that you have uploaded a PDF format of your resume, 
                                 which can qualify in most of the ATS recruitment processes"""
         ats_score += 5
-   
+    total.append(Format)
+
     # Certifications
+    Cerifications = {}
+    Cerifications["name"] = "Cerifications"
     if len(resume.get("Certifications")) :
-        total["certificateScore"] = 2.5
-        total["certificateReview"] = "Great that you have included certificates in your resume"
+        Cerifications["score"] = 100
+        Cerifications["description"] = "Great that you have included certificates in your resume"
         ats_score += 2.5
     else :
-        total["certificateScore"] = 0.0
-        total["certificateReview"] = """Adding a section dedicated to certificates showcases the specific knowledge and skills you've 
+        Cerifications["score"] = 0
+        Cerifications["description"] = """Adding a section dedicated to certificates showcases the specific knowledge and skills you've 
                                         acquired during your certification. This enables recruiters to assess your proficiency in areas 
                                         directly related to the position you're applying for."""
         missedFields.add("Certifications")
+    total.append(Cerifications)
 
     # Achievements
-    # if len(resume.get("Achievements")) :
-    #     total["achievementsScore"] = 2.5
-    #     total["achievementsReview"] = "Great that you have included achievements in your resume"
-    #     ats_score += 2.5
-    # else :
-    #     total["achievementsScore"] = 0.0
-    #     total["achivementsReview"] = " Highlight significant accomplishments, such as awards, recognitions, or milestones attained in your career, providing tangible evidence of your capabilities, leadership, and contributions to previous employers, thereby distinguishing you as a high-achieving candidate with a track record of success."
+    Achievements = {}
+    Achievements["name"] = "Achievements"
+    if len(resume.get("Achievements")) :
+        Achievements["score"] = 100
+        Achievements["description"] = "Great that you have included achievements in your resume"
+        ats_score += 2.5
+    else :
+        Achievements["score"] = 0
+        Achievements["description"] = " Highlight significant accomplishments, such as awards, recognitions, or milestones attained in your career, providing tangible evidence of your capabilities, leadership, and contributions to previous employers, thereby distinguishing you as a high-achieving candidate with a track record of success."
+    total.append(Achievements)
     
     # Soft Skills
+    SoftSkills = {}
+    SoftSkills["name"] = "Soft Skills"    
     total_softSkills = len(resume.get("Soft_skills"))
     if total_softSkills > 1 and total_softSkills < 5 :
-        total["softSkillsScore"] = 5
+        SoftSkills["score"] = 100
+        SoftSkills["description"] = "Great that you have added soft skills in your resume, which is a great add on to the resume"
     elif total_softSkills == 1 :
-        total["softSkillsScore"] = 2.5
-        total["softSkillsReview"] = "Please Include two to five soft skills"
+        SoftSkills["score"] = 50
+        SoftSkills["description"] = "Please Include two to five soft skills"
     else :
-        total["softSkillsScore"] = 0
-        total["softSkillsReview"] = """Soft skills are personal attributes and interpersonal abilities that complement 
+        SoftSkills["score"] = 0
+        SoftSkills["description"] = """Soft skills are personal attributes and interpersonal abilities that complement 
                                     your technical skills and are often essential for success in the workplace. 
                                     By highlighting your soft skills, you can demonstrate your ability to work 
                                     effectively in a team, communicate clearly, solve problems, and adapt to changing situations."""
         missedFields.add("Softs kills")
-    # print(ats_score)
+    total.append(SoftSkills)
+    mandatorySectionsScore = contact["score"] + objective["score"] + experience["score"] + Project["score"] + Skills["score"] + Education["score"]
+    if(mandatorySectionsScore >= 450) :
+        ats_score += 10
+    elif mandatorySectionsScore >= 350 :
+        ats_score += 5
     return {"total":total,"missedFields":missedFields,"ats_score":ats_score}
 
 
