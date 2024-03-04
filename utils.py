@@ -6,6 +6,8 @@ import pdf2image
 import json
 import pytesseract
 import PyPDF2
+from io import BytesIO
+
 # from langchain_community.llms import CTransformers
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
@@ -45,27 +47,21 @@ def gemini_json_response(count,prompt,text):
     return obj
 
 
-def extract_text(path):
-    try:
-        pdfFileObj = open(path, 'rb')  #reading the file
-    except Exception as e:
-        return "File not found"
+def extract_text(contents):
+
     result=""
     is_image=False
-    pdfReader = PyPDF2.PdfReader(pdfFileObj) 
-    for pg in range(0,len(pdfReader.pages)):
-        result+=pdfReader.pages[pg].extract_text()  #extracting text directly
+    pdf = PyPDF2.PdfReader(BytesIO(contents))
+    for pg in range(0,len(pdf.pages)):
+        result+=pdf.pages[pg].extract_text()  #extracting text directly
 
     if (len(result)<=0):  # if no text found, use ocr
         print("It is an image resume")
         is_image=True
-        pdfFileObj.seek(0)  
-        images = pdf2image.convert_from_bytes(pdfFileObj.read())  #converting the file object into bytes 
+        images = pdf2image.convert_from_bytes(contents)  #converting the file object into bytes 
 
         for pg, img in enumerate(images):
             result+=pytesseract.image_to_string(img) #extracting the text using the ocr
-
-    pdfFileObj.close()
 
     return {"text":result,"is_image":is_image}
 

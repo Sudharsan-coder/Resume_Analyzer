@@ -5,13 +5,13 @@ def Resume_parsing(resumeDetails):
     prompt='''Your task is to parse the resume details and give a json format which can be readily converted into dict using json.loads in python and if there is no relevent information found then use a empty string("").And don\'t use backticks or other special symbols in the output. The output must be in the below format 
     {{"Contact_information":{{"Name":"", "email":"", "phone":"", "Linkedin":"", "gitHub":""}},
     "Resume_summary":"mandatory field",
-    "Working_experience" :[{{"Organization_name":"","role":"", "years_of_experience":"Always convert it into a single number in the year not in months"}}] (if available),
+    "Working_experience" :[{{"Organization_name":"","role":"", "years_of_experience":"Always convert it into a single number in the year not in months"}}],
     "Projects":[{{"Name":"","description":"","tech_stack":""}}],
     "Certifications":[""] (if available),
-    "Education" : [{{"Institution_name":"","Degree":"", "Marks":"" ,"Completion_year":""}}],
+    "Education" : [{{"Institution_name":"","Degree":"always in short abbreviation form","Course":"prefer short form like CSE", "Marks":"" ,"Completion_year":""}}],
     "Achievements":[""](if avaliable),
-    "Hard_skills":[""](always must be less than 3 words),
-    "Soft_skills":[""](always must be less than 3 words),
+    "Hard_skills":["always must be less than 3 words"],
+    "Soft_skills":["always must be less than 3 words"],
     "Location":"",
     "Languages":"" }}
     '''
@@ -25,7 +25,9 @@ def find_number(string):
         if(word.isdigit()):
             return int(word)
     return 0
-            
+
+def compare_without_special_chars(string1,string2):
+    return string1.replace(" ","").replace("-","").replace(".","").lower() == string2.replace(" ","").replace("-","").replace(".","").lower() 
 def has_number(string):
      return any(char.isdigit() for char in string)
 
@@ -62,7 +64,8 @@ def description_parsing(description):
         "Location":"",
         "Nice_to_have_skills":["always must be less than 3 words"],
         "Contact":""
-        "Qualification":""}}""",f"The Job description is :{description}")
+        "Degree":"always in short abbreviation form",
+        "Course":"prefer short form like CSE"}}""",f"The Job description is :{description}")
     parsed_info["Timing"]=find_words_in_string(description,["full time","full-time","fulltime","part time","parttime","part-time"])
     parsed_info["Job_type"]=find_words_in_string(description,["onsite","on site","on-site","remote","hybrid","work from home"])
 
@@ -139,8 +142,8 @@ def calculate_description_score(description):
     return {"score":score,"Suggestions_to_improve":missing}
 
 def parsing_resume_job_description(resume,description):
-    # print(resume)
-    # print(description)
+    print(resume)
+    print(description)
     score_info={}
     total=0
     resume_skills=resume["Hard_skills"]
@@ -156,32 +159,40 @@ def parsing_resume_job_description(resume,description):
     total+=score
     score=0
     expected_experience=find_number(description["Experience"])
-    no_of_matching_qualifications=0
-    if expected_experience>0:
-        actual_experience=0
-        for works in resume["Working_experience"]:
-            if(works["Degree"]==description["Qualification"]):
-                no_of_matching_qualifications+=1
-            actual_experience+=int(works["years_of_experience"])
-        experience_difference=actual_experience-expected_experience
-        
-        score_info["Qualification"]=no_of_matching_qualifications*3
-        total+=no_of_matching_qualifications*3
-
-        if(experience_difference>0):
-            if(experience_difference==0):
-                score+=2
-            score+=experience_difference*2
+    number_of_matching_degree=0
+    number_of_matching_course=0
+    actual_experience=0
+    for works in resume["Working_experience"]:
+        actual_experience+=int(works["years_of_experience"])
+    experience_difference=actual_experience-expected_experience
+    
+    if expected_experience>0 and experience_difference>0:
+        if(experience_difference==0):
+            score+=2
+        score+=experience_difference*2
     score_info["Experience"]=score
     total+=score
+    print(description["Degree"])
+    for education in resume["Education"]:
+        # print(education)
+        # if(education["Degree"]==description["Degree"]):
+        if(compare_without_special_chars(education["Degree"],description["Degree"])):
+            number_of_matching_degree+=1
+        if(compare_without_special_chars(education["Course"],description["Course"])):
+            number_of_matching_course+=1
+    score_info["Degree"]=number_of_matching_degree*3
+    total+=number_of_matching_degree*3
+    score_info["Course"]=number_of_matching_course*3
+    total+=number_of_matching_course*3
 
+    score=0
+    if(description["Location"]!='' and  compare_without_special_chars(description["Location"],resume["Location"])):
+        score=2.5
+    score_info["location"]=score
+    total+=score
     ats=calculateScore(resume)["ats_score"]
     score_info["ats_score"]=round(ats/10,2)
     total+=round(ats/10,2)
-    if(description["Location"]!='' and  description["Location"]==resume["Location"]):
-        score_info["location"]=2.5
-        total+=2.5
-    
     score_info["Total"]=total
 
     return score_info
