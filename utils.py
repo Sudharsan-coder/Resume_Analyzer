@@ -44,6 +44,7 @@ def gemini_json_response(count,prompt,text):
             return obj
         else:
             return None
+    print(obj)
     return obj
 
 

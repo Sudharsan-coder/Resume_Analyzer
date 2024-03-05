@@ -98,7 +98,7 @@ def skill_compare(skills1, skills2):
         skill_formated = skill.replace(" ", "").replace("-", "").replace(".", "").lower()
         if skill_formated in skills1:
             matching_skills.append(skill)
-    return {"matchingSkills": matching_skills, "notMatchingSkills": skills2}
+    return {"matchingSkills": matching_skills, "requiredSkills": skills2}
 
 # Skills Review
 def generate_upskilling_paragraph(skills):
@@ -210,15 +210,15 @@ def extract_years_from_experience(text):
 # Overall Resume Matching Review
 def generate_review(match_percentage):
     if match_percentage >= 0 and match_percentage <= 20:
-        return "Your resume currently shows a minimal alignment with the job requirements. Consider revising and highlighting your skills and experiences that closely match the job description."
+        return "Minimal alignment. Revise to match closely."
     elif match_percentage > 20 and match_percentage <= 40:
-        return "Your resume demonstrates some alignment with the job requirements, but there's room for improvement. Focus on emphasizing your relevant experiences and skills to enhance your suitability for the position."
+        return "Some alignment. Emphasize relevant experiences."
     elif match_percentage > 40 and match_percentage <= 60:
-        return "Your resume shows a moderate alignment with the job requirements, indicating a good foundation. Keep refining and tailoring your resume to better match the specific needs of the job role."
+        return "Moderate alignment. Keep refining for specificity."
     elif match_percentage > 60 and match_percentage <= 80:
-        return "Your resume exhibits a strong alignment with the job requirements, showcasing your suitability for the position. Continue fine-tuning and emphasizing your key qualifications to further strengthen your application."
+        return "Strong alignment. Highlight key qualifications."
     elif match_percentage > 80 and match_percentage <= 100:
-        return "Congratulations! Your resume is highly aligned with the job requirements, indicating a great fit for the position. Ensure your application highlights your relevant experiences and skills effectively to stand out to potential employers."
+        return "High alignment. Highlight relevant experiences effectively."
 
 
 
